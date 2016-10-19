@@ -77,7 +77,9 @@ def extract_year_month_day(
     df[day_column_name] = df[date_column_name].dt.day
 
 
-def test_ssl_algorithm(data, labels, algorithm, n_labeled_objects=10, scoring_function='all', random_state=None):
+def test_ssl_algorithm(data, labels, algorithm,
+                       n_labeled_objects=10, n_folds=None, scoring_function='all', random_state=None):
+    assert (n_folds is None) or (n_folds > 1)
 
     n_objects = data.shape[0]
 
@@ -113,3 +115,60 @@ def test_ssl_algorithm(data, labels, algorithm, n_labeled_objects=10, scoring_fu
         scores[func_name] = switch[func_name]()
 
     return scores
+
+
+def render_series(series: pd.Series,
+                  caption_string: str = None,
+                  heading_style: dict = None,
+                  data_cell_style: dict = None,
+                  caption_style: dict = None,
+                  format_dict: dict = None,
+                  precision: int = None,
+                  hide_index_column: bool = True):
+
+    if not caption_string:
+        caption_string = series.name
+
+    default_heading_style = {'font-size': '10px', 'height': '100px', 'text-align': 'center'}
+    default_data_cell_style = {'font-size': '15px', 'text-align': 'center'}
+    default_caption_style = {'text-align': 'center'}
+
+    # Overriding default styles for header
+    if heading_style:
+        for key, value in heading_style.items():
+            default_heading_style[key] = value
+
+    # Overriding default styles for data cells
+    if data_cell_style:
+        for key, value in data_cell_style.items():
+            default_data_cell_style[key] = value
+
+    # Overriding default styles for the caption
+    if caption_style:
+        for key, value in caption_style.items():
+            default_caption_style[key] = value
+
+    df = series.to_frame().T
+    df_styler = df.style
+
+    all_styles = [dict(selector='.col_heading', props=default_heading_style.items()),
+                  dict(selector='.data', props=default_data_cell_style.items())]
+
+    if caption_string:
+        all_styles.append(dict(selector='caption', props=default_caption_style.items()))
+        df_styler.set_caption(caption_string)
+
+    if hide_index_column:
+        all_styles.append(dict(selector='.row_heading', props=[('display', 'none')]))
+        all_styles.append(dict(selector='.blank', props=[('display', 'none')]))
+
+    if format_dict:
+        df_styler.format(format_dict)
+
+    if precision:
+        df_styler.set_precision(precision)
+
+    df_styler.set_table_attributes('style="width: 100%;  table-layout: fixed;"')
+    df_styler.set_table_styles(all_styles)
+
+    return df_styler
